@@ -1,4 +1,4 @@
-# pacrep
+# PacRep
 Choose pacman repositories on a per package basis
 
 ## Description
