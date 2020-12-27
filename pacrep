@@ -6,9 +6,9 @@
 #+ the entire system, and -s, to install single packages. Once it knows
 #+ what is to be installed/upgraded, it checks every package against
 #+ a rules list (a series of lines in the form repo/pkg defined in the
-#+ configuration file), and, if a rule for the package is found, 
-#+ it installs the package from the specified repository (instead of 
-#+ from the first repository defined in /etc/pacman.conf providing the 
+#+ configuration file), and, if a rule for the package is found,
+#+ it installs the package from the specified repository (instead of
+#+ from the first repository defined in /etc/pacman.conf providing the
 #+ package, which is pacman's default behaviour).
 
 ### PROGRAM DATA ###
@@ -87,11 +87,11 @@ dry_run=0
 case $1 in
 
 	-h|--help) help; exit $EXIT_SUCCESS ;;
-	
+
 	-v|--version) version; exit $EXIT_SUCCESS ;;
 
 	-l|--list)
-		/usr/bin/grep -v "^$\|^#" "$CONFIG_FILE"
+		/usr/bin/grep -v "^$\|^#" "$CONFIG_FILE" | /usr/bin/column
 		exit $EXIT_SUCCESS
 	;;
 
@@ -103,14 +103,14 @@ case $1 in
 	### GET PACKAGES TO BE INSTALLED ###
 
 	# Sysupgrade mode
-	-a|--all) 
+	-a|--all)
 		# Get available upgrades
 		if ! /usr/bin/$PACMAN -Sy; then
 			exit $EXIT_FAILURE
 		fi
 		ups=( $(/usr/bin/$PACMAN -Qu | /usr/bin/grep -v "\[ignored\]" \
 		| /usr/bin/awk '{print $1}') )
-		
+
 		# List upgrades
 		echo -e "\n${blue}::$nc$bold Available upgrades:$nc "
 		if ! /usr/bin/$PACMAN -Qu; then
@@ -131,7 +131,7 @@ fi
 
 ### CHECK UPDATES AGAINST RULES ###
 
-# These rules define from what repo a package should be installed 
+# These rules define from what repo a package should be installed
 rules=( $(/usr/bin/grep -v "^$\|^#" "$CONFIG_FILE") )
 
 [[ $dry_run -eq 0 ]] && echo ""
@@ -142,13 +142,13 @@ unset rules_install remaining_install
 remaining_install=( ${ups[*]} )
 
 for (( i=0;i<${#ups[*]};i++ )); do
-	
-	# If repo was already specified in command line (repo/pkg), skip the rules 
+
+	# If repo was already specified in command line (repo/pkg), skip the rules
 	#+ test
 	if [[ ${ups[$i]} == *"/"* ]]; then
 		continue
 	fi
-	
+
 	for (( j=0;j<${#rules[*]};j++ )); do
 		if [[ ${ups[$i]} == ${rules[$j]##*/} ]]; then
 			# If a rule for the pkg is found, add the pkg to the ruled
@@ -164,13 +164,13 @@ done
 
 if [[ $dry_run -eq 1 ]]; then
 	echo "Ruled packages: ${rules_install[*]}
-Non-ruled packages: ${remaining_install[*]}" 
+Non-ruled packages: ${remaining_install[*]}"
 	exit $EXIT_SUCCESS
 fi
 
 ### INSTALL RULED PACKAGES, IF ANY ###
 
-if [[ ${#rules_install[@]} -eq 0 ]]; then 
+if [[ ${#rules_install[@]} -eq 0 ]]; then
 	echo -e "${green} ->$nc$bold No ruled packages found$nc\n"
 else
 	echo -e "${green} ->$nc$bold Ruled packages found:$nc"

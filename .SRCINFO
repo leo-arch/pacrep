@@ -11,6 +11,7 @@ pkgbase = pacrep
 	depends = coreutils
 	depends = grep
 	depends = gawk
+	depends = util-linux
 	source = git+https://github.com/leo-arch/pacrep.git
 	sha256sums = SKIP
 
