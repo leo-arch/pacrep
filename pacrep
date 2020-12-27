@@ -179,7 +179,7 @@ else
 	done
 
 	echo -e "\n${blue}::$nc$bold Installing ruled packages...$nc "
-	if ! /usr/bin/$PACMAN -S --needed ${rules_install[*]}; then
+	if ! /usr/bin/$PACMAN -S ${rules_install[*]}; then
 		exit $EXIT_FAILURE
 	fi
 
@@ -191,7 +191,7 @@ fi
 ### INSTALL REMAINING PACKAGES, IF ANY ###
 
 if [[ ${#remaining_install[*]} -gt 0 ]]; then
-	/usr/bin/$PACMAN -S --needed ${remaining_install[*]}
+	/usr/bin/$PACMAN -S ${remaining_install[*]}
 fi
 
 exit $EXIT_SUCCESS
