@@ -1,0 +1,194 @@
+#!/usr/bin/env bash
+
+# PacRep: Choose pacman repositories on a per package basis
+
+# This script grabs what is to be installed/upgraded, check it against
+#+ a rules list (a series of lines in the form repo/pkg), and, if a rule
+#+ for the package is found, installs the package from the specified
+#+ repository (instead of from the first repository defined in 
+#+ /etc/pacman.conf providing the package, which is pacman's default
+#+ behaviour).
+
+### PROGRAM DATA ###
+
+ME="PacRep"
+VERSION="0.1.3"
+AUTHOR="L. Abramovich"
+DATE="Dec, 2020"
+LICENSE="GPL2+"
+WEBSITE="https://github.com/leo-arch/pacrep"
+
+[[ $SUDO_USER ]] && user=$SUDO_USER || user=$USER
+if [[ $user == "root" ]]; then
+	CONFIG_DIR="/root/.config/pacrep"
+else
+	CONFIG_DIR="/home/$user/.config/pacrep"
+fi
+
+CONFIG_FILE="$CONFIG_DIR/${ME,,}.conf"
+
+EXIT_SUCCESS=0
+EXIT_FAILURE=1
+
+#Colors
+green="\033[1;32m"
+blue="\033[1;34m"
+white="\033[0m\e[1m"
+bold='\033[1m'
+nc="\033[0m"
+
+function echoerr ()
+{
+	echo -e "$@" >&2
+}
+
+function help ()
+{
+	echo "PacRep: Choose pacman repositories on a per package basis"
+	echo "Usage: ${ME,,} [-a,--all] [-s,--single PKG(s)] [-h,--help] \
+[-v,--version]
+
+-a, --all		Update and upgrade the system
+-s, --single PKG(s)	Install PKG(s)
+-l, --list		List current rules
+-d, --dry-run PKG(s)	Print what would be installed
+-h, --help		Print this help
+-v, --version		Show version information
+
+NOTE: Configuration file: $CONFIG_FILE"
+}
+
+function version ()
+{
+	echo "${ME,,} $VERSION ($DATE), by $AUTHOR
+License: $LICENSE
+Website: $WEBSITE"
+}
+
+### GET PACKAGE MANAGER: EITHER PACMAN OR POWERPILL ###
+
+#If the pkg manager env variable is not set, use the default
+[[ -z $PACMAN ]] && PACMAN="pacman"
+
+### SET/GET CONFIG FILE ###
+
+! [[ -d $CONFIG_DIR ]] && /usr/bin/mkdir -p "$CONFIG_DIR"
+! [[ -f $CONFIG_FILE ]] && echo "#$ME configuration file
+#Add here repository rules for packages in the form 'repo/pkg'
+#Example: core/filesystem
+" > "$CONFIG_FILE"
+
+### PARSE ARGUMENTS ###
+
+dry_run=0
+
+case $1 in
+
+	-h|--help) help; exit $EXIT_SUCCESS ;;
+	
+	-v|--version) version; exit $EXIT_SUCCESS ;;
+
+	-l|--list)
+		/usr/bin/grep -v "^$\|^#" "$CONFIG_FILE"
+		exit $EXIT_SUCCESS
+	;;
+
+	-d|--dry-run)
+		shift; ups=( "$@" )
+		dry_run=1
+	;;
+
+	### GET PACKAGES TO BE INSTALLED ###
+
+	# Sysupgrade mode
+	-a|--all) 
+		# Get available upgrades
+		if ! /usr/bin/$PACMAN -Sy; then
+			exit $EXIT_FAILURE
+		fi
+		ups=( $(/usr/bin/$PACMAN -Qu | /usr/bin/grep -v "\[ignored\]" \
+		| /usr/bin/awk '{print $1}') )
+		
+		# List upgrades
+		echo -e "\n${blue}::$nc$bold Available upgrades:$nc "
+		if ! /usr/bin/$PACMAN -Qu; then
+			exit $EXIT_FAILURE
+		fi
+	;;
+
+	# Single package(s) mode
+	-s|--single) shift; ups=( "$@" ) ;;
+
+	*) echoerr "${ME,,}: '$1': Invalid parameter"; exit $EXIT_FAILURE ;;
+esac
+
+if [[ ${#ups[*]} -eq 0 ]]; then
+	echo "There is nothing to do"
+	exit $EXIT_SUCCESS
+fi
+
+### CHECK UPDATES AGAINST RULES ###
+
+# These rules define from what repo a package should be installed 
+rules=( $(/usr/bin/grep -v "^$\|^#" "$CONFIG_FILE") )
+
+[[ $dry_run -eq 0 ]] && echo ""
+	echo -e "${blue}::$nc$bold Checking packages against rules...$nc "
+
+unset rules_install remaining_install
+remaining_install=( ${ups[*]} )
+
+for (( i=0;i<${#ups[*]};i++ )); do
+	
+	# If repo was already specified in command line (repo/pkg), skip the rules 
+	#+ test
+	if [[ ${ups[$i]} == *"/"* ]]; then
+		continue
+	fi
+	
+	for (( j=0;j<${#rules[*]};j++ )); do
+		if [[ ${ups[$i]} == ${rules[$j]##*/} ]]; then
+			# If a rule for the pkg is found, add the pkg to the ruled
+			#+ pkgs list and remove it from the non-ruled list
+			rules_install[${#rules_install[*]}]="${rules[$j]%%/*}/${ups[$i]}"
+			unset 'remaining_install[$i]'
+			break
+		fi
+	done
+done
+
+### DRY-RUN: Just print and exit ###
+
+if [[ $dry_run -eq 1 ]]; then
+	echo "Ruled packages: ${rules_install[*]}
+Non-ruled packages: ${remaining_install[*]}" 
+	exit $EXIT_SUCCESS
+fi
+
+### INSTALL RULED PACKAGES, IF ANY ###
+
+if [[ ${#rules_install[@]} -eq 0 ]]; then 
+	echo -e "${green} ->$nc$bold No ruled packages found$nc\n"
+else
+	echo -e "${green} ->$nc$bold Ruled packages found:$nc"
+	for (( i=0;i<${#rules_install[*]};i++ )); do
+		echo -e " $((i+1))) ${rules_install[$i]}"
+	done
+
+	echo -e "\n${blue}::$nc$bold Installing ruled packages...$nc "
+	if ! /usr/bin/$PACMAN -S --needed ${rules_install[*]}; then
+		exit $EXIT_FAILURE
+	fi
+
+	if [[ ${#ups[*]} -gt ${#rules_install[*]} ]]; then
+		echo -e "\n${blue}::$nc$bold Installing remaining packages...$nc "
+	fi
+fi
+
+### INSTALL REMAINING PACKAGES, IF ANY ###
+
+if [[ ${#remaining_install[*]} -gt 0 ]]; then
+	/usr/bin/$PACMAN -S --needed ${remaining_install[*]}
+fi
+
+exit $EXIT_SUCCESS
