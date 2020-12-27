@@ -1,6 +1,8 @@
 # PacRep
 Choose pacman repositories on a per package basis
 
+![alt_tag](https://github.com/leo-arch/pacrep/blob/master/pacrep_rules.png)
+
 ## Description
 
 This script takes basically two options: -a, to update and upgrade the entire system, and -s, to install single packages. Once it knows what is to be installed/upgraded, it checks every package against a rules list (a series of lines in the form "repo/pkg" defined in the configuration file), and, if a rule for the package is found, it installs the package from the specified repository (instead of from the first repository defined in `/etc/pacman.conf` providing the package, which is pacman's default behaviour).

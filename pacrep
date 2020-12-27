@@ -136,7 +136,7 @@ rules=( $(/usr/bin/grep -v "^$\|^#" "$CONFIG_FILE") )
 
 [[ $dry_run -eq 0 ]] && echo ""
 echo -e "${blue}::$nc$bold Checking packages against rules...$nc "
-[[ ${#rules[*]} -gt 0 ]] && echo "No rules defined"
+[[ ${#rules[*]} -gt 0 ]] && echo "$nc${bold}No rules defined$nc"
 
 unset rules_install remaining_install
 remaining_install=( ${ups[*]} )
