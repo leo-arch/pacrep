@@ -3,7 +3,7 @@
 
 ![Screenshot](pacrep_rules.png)
 
-Example image of `pacrep` rules
+Example image of `pacrep` rules. Here I am using repositories coming from Artix (system, world, and galaxy) to get rid of systemd (using instead OpenRC), Parabola (libre) to get free/libre packages not found in Arch offical repositories, and Arch itself, of course, to preserve Arch linux identity. All packages not listed here are installed as usual from Arch repositories.
 
 ## Description
 
