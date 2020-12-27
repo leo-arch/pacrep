@@ -1,5 +1,5 @@
 # PacRep
-Choose pacman repositories on a per package basis
+> Choose pacman repositories on a per package basis
 
 ![alt_tag](https://github.com/leo-arch/pacrep/blob/master/pacrep_rules.png)
 
