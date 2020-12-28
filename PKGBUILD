@@ -1,7 +1,7 @@
 # Maintainer: archcrack <johndoe.arch@outlook.com>
 
 pkgname=pacrep
-pkgver=0.1.3
+pkgver=0.1.4
 pkgrel=1
 pkgdesc="Choose pacman repositories on a per package basis"
 arch=(any)
